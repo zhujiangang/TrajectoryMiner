@@ -1,6 +1,8 @@
 package edu.sjtu.trajectoryminer.clustering.traclus;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -10,6 +12,7 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import java.util.Random;
 import java.util.Set;
 
 import edu.sjtu.trajectoryminer.Point;
@@ -18,6 +21,7 @@ import edu.sjtu.trajectoryminer.clustering.Cluster;
 import edu.sjtu.trajectoryminer.utils.CommonUtils;
 import edu.sjtu.trajectoryminer.utils.FileUtils;
 import edu.sjtu.trajectoryminer.utils.MathUtils;
+import edu.sjtu.trajectoryminer.utils.RandomUtils;
 import edu.sjtu.trajectoryminer.utils.VectorUtils;
 
 public class TraClusClustering {
@@ -28,7 +32,8 @@ public class TraClusClustering {
 
 	private int maxNPoints;// max number of points in a trajectory
 	private int nTotalPoints;// the number of all points in all trajectories
-
+	
+	private BufferedWriter writer;
 	private double epsParam;
 	private int minLnsParam;
 	private int nTotalLineSegments;
@@ -42,10 +47,10 @@ public class TraClusClustering {
 	private Point vector1;
 	private Point vector2;
 	private Point projectionPoint;
-	private Point startPoint1, endPoint1, startPoint2, endPoint2;
+	// private Point startPoint1, endPoint1, startPoint2, endPoint2;
 
-	private List<LineSegmentId> idArray;
-	private List<Point> lineSegmentPointArray;
+	private List<LineSegment> lineSegmentArray;
+	// private List<Point> lineSegmentPointArray;
 	private double coefficient;
 
 	public static void main(String[] args) {
@@ -53,16 +58,16 @@ public class TraClusClustering {
 		Point s = new Point(2);
 		Point e = new Point(2);
 		Point p = new Point(2);
-		
+
 		s.setCoordinate(0, 5);
-		s.setCoordinate(1,6);
-		
+		s.setCoordinate(1, 6);
+
 		e.setCoordinate(0, 7);
 		e.setCoordinate(1, 9);
-		
+
 		p.setCoordinate(0, 1);
 		p.setCoordinate(1, 10);
-		
+
 		TraClusClustering tcc = new TraClusClustering(null);
 		System.out.println(tcc.measureDistanceFromPointToLineSegment(s, e, p));
 		System.out.println(tcc.coefficient);
@@ -75,16 +80,17 @@ public class TraClusClustering {
 		trajectoryList = new ArrayList<Trajectory>();
 		clusterList = new ArrayList<Cluster>();
 
-		idArray = new ArrayList<LineSegmentId>();
-		lineSegmentPointArray = new ArrayList<Point>();
+		lineSegmentArray = new ArrayList<LineSegment>();
+		// lineSegmentPointArray = new ArrayList<Point>();
 
 		vector1 = new Point();
 		vector2 = new Point();
 		projectionPoint = new Point();
-		startPoint1 = new Point();
-		startPoint2 = new Point();
-		endPoint1 = new Point();
-		endPoint2 = new Point();
+		// startPoint1 = new Point();
+		// startPoint2 = new Point();
+		// endPoint1 = new Point();
+		// endPoint2 = new Point();
+		writer = FileUtils.getBufferedWriter(new File("D:/distance.txt"));
 	}
 
 	/**
@@ -96,6 +102,7 @@ public class TraClusClustering {
 	public boolean loadTrajectory() {
 		List<String> lines = FileUtils.readLine(new File(config
 				.getTraFileName()));
+		lines = RandomUtils.randomSelect(lines, 100);
 		this.maxNPoints = Integer.MIN_VALUE;
 		this.nTotalPoints = 0;
 
@@ -137,6 +144,7 @@ public class TraClusClustering {
 	 */
 	public boolean partitionTrajectory() {
 		for (Trajectory trajectory : trajectoryList) {
+			System.out.println(trajectory.getTrajectoryId());
 			findOptimalPartition(trajectory);
 		}
 		if (!storeClusterComponentIntoIndex())
@@ -164,24 +172,24 @@ public class TraClusClustering {
 				if (MathUtils.computeEuclideanDistance(
 						startPoint.getCoordinate(), endPoint.getCoordinate()) < TraClusConfig.MIN_LINESEGMENT_LENGTH)
 					continue;
+				// // merge start point and end point into one single point
+				// Point lineSegmentPoint = new Point(nDimensions * 2);
+				// for (int j = 0; j < nDimensions; j++) {
+				// lineSegmentPoint.setCoordinate(j,
+				// startPoint.getCoordinate(j));
+				// lineSegmentPoint.setCoordinate(nDimensions + j,
+				// endPoint.getCoordinate(j));
+				// }
 
+				LineSegment lineSegment = new LineSegment();
+				lineSegment.trajectoryId = trajectory.getTrajectoryId();
+				lineSegment.order = i;
+				lineSegment.startPoint = startPoint;
+				lineSegment.endPoint = endPoint;
+				lineSegment.lingSegmentId = nTotalLineSegments;
+				lineSegmentArray.add(lineSegment);
 				nTotalLineSegments++;
-				int nDimensions = config.getnDimensions();
-				// merge start point and end point into one single point
-				Point lineSegmentPoint = new Point(nDimensions * 2);
-				for (int j = 0; j < nDimensions; j++) {
-					lineSegmentPoint.setCoordinate(j,
-							startPoint.getCoordinate(j));
-					lineSegmentPoint.setCoordinate(nDimensions + j,
-							endPoint.getCoordinate(j));
-				}
-
-				LineSegmentId id = new LineSegmentId();
-				id.trajectoryId = trajectory.getTrajectoryId();
-				id.order = i;
-
-				idArray.add(id);
-				lineSegmentPointArray.add(lineSegmentPoint);
+				// lineSegmentPointArray.add(lineSegmentPoint);
 			}
 		}
 
@@ -258,9 +266,10 @@ public class TraClusClustering {
 	}
 
 	/**
-	 * the distance between the line segment and the sub-line segment 
-	 * beween startPIndex and endPIndex.
-	 * We use the sum of Perpendicular Distance and the Angle Disntance
+	 * the distance between the line segment and the sub-line segment beween
+	 * startPIndex and endPIndex. We use the sum of Perpendicular Distance and
+	 * the Angle Disntance
+	 * 
 	 * @param trajectory
 	 * @param startPIndex
 	 * @param endPIndex
@@ -303,6 +312,7 @@ public class TraClusClustering {
 
 	/**
 	 * perform clustering using DBSCAN
+	 * 
 	 * @param eps
 	 * @param minLns
 	 * @return
@@ -313,7 +323,7 @@ public class TraClusClustering {
 
 		currComponentId = 0;
 
-		//initialize the line segment with UNCLASSIFIED
+		// initialize the line segment with UNCLASSIFIED
 		componentIdArray = new int[nTotalLineSegments];
 		for (int i = 0; i < nTotalLineSegments; i++)
 			componentIdArray[i] = TraClusConfig.UNCLASSIFIED;
@@ -323,7 +333,6 @@ public class TraClusClustering {
 				if (expandDenseComponent(i, currComponentId, eps, minLns))
 					currComponentId++;
 		}
-
 		return true;
 	}
 
@@ -335,28 +344,27 @@ public class TraClusClustering {
 		Set<Integer> seedResultSet = new HashSet<Integer>();
 		int currIndex;
 
-		//the start point end end point are merged in lineSegmentPointArray
-		//s1,s2,...,sn,e1,e2,...,en
-		extractStartAndEndPoints(index, startPoint1, endPoint1);
-		computeEPSNeighborhood(startPoint1, endPoint1, eps, seedsSet);
+		// the start point end end point are merged in lineSegmentPointArray
+		// s1,s2,...,sn,e1,e2,...,en
+		// extractStartAndEndPoints(index, startPoint1, endPoint1);
+		LineSegment lineSegment = lineSegmentArray.get(index);
+		computeEPSNeighborhood(lineSegment, eps, seedsSet);
 
 		if (seedsSet.size() < minDensity) // not a core line segment
 		{
 			componentIdArray[index] = TraClusConfig.NOISE;
 			return false;
 		} else {
-
 			for (Integer id : seedsSet)
 				componentIdArray[id] = componentId;
-
 			seedsSet.remove(index);
 			seeds.addAll(seedsSet);
 			while (!seeds.isEmpty()) {
 				currIndex = seeds.poll();
 				seedsSet.remove(currIndex);
-				extractStartAndEndPoints(currIndex, startPoint1, endPoint1);
-				computeEPSNeighborhood(startPoint1, endPoint1, eps,
-						seedResultSet);
+				LineSegment currLineSegment = lineSegmentArray.get(currIndex);
+				// extractStartAndEndPoints(currIndex, startPoint1, endPoint1);
+				computeEPSNeighborhood(currLineSegment, eps, seedResultSet);
 
 				if (seedResultSet.size() >= minDensity) {
 					for (Integer id : seedResultSet) {
@@ -367,7 +375,7 @@ public class TraClusClustering {
 									seeds.offer(id);
 									seedsSet.add(id);
 								}
-							}
+							}// filter the noisy node
 							componentIdArray[id] = componentId;
 						}
 					}
@@ -377,34 +385,46 @@ public class TraClusClustering {
 		}
 	}
 
-	private void computeEPSNeighborhood(Point startPoint, Point endPoint,
-			double eps, Set<Integer> result) {
+	private void computeEPSNeighborhood(LineSegment lineSegment, double eps,
+			Set<Integer> result) {
 		result.clear();
-		startPoint2 = new Point();
-		endPoint2 = new Point();
+		Point startPoint1 = lineSegment.startPoint;
+		Point endPoint1 = lineSegment.endPoint;
+		Point startPoint2 = new Point();
+		Point endPoint2 = new Point();
+		// for every line segment, if the distance from it to given line segment
+		// is smaller than eps,
+		// then it will be added to result set.
 		for (int j = 0; j < nTotalLineSegments; j++) {
-			extractStartAndEndPoints(j, startPoint2, endPoint2);
-			double distance = computeDistanceBetweenTwoLineSegments(startPoint,
-					endPoint, startPoint2, endPoint2);
+			// extractStartAndEndPoints(j, startPoint2, endPoint2);
+			LineSegment lineSegment2 = lineSegmentArray.get(j);
+			startPoint2 = lineSegment2.startPoint;
+			endPoint2 = lineSegment2.endPoint;
+			double distance = computeDistanceBetweenTwoLineSegments(
+					startPoint1, endPoint1, startPoint2, endPoint2);
 			// if the distance is below the threshold, this line segment belongs
 			// to the eps-neighborhood
+			try {
+				writer.write(distance+"\n");
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			if (distance <= eps)
 				result.add(j);
 		}
-
-		return;
 	}
 
-	private void extractStartAndEndPoints(int index, Point startPoint,
-			Point endPoint) { // for speedup
-		// compose the start and end points of the line segment
-		for (int i = 0; i < config.getnDimensions(); i++) {
-			startPoint.setCoordinate(i, lineSegmentPointArray.get(index)
-					.getCoordinate(i));
-			endPoint.setCoordinate(i, lineSegmentPointArray.get(index)
-					.getCoordinate(config.getnDimensions() + i));
-		}
-	}
+	// private void extractStartAndEndPoints(int index, Point startPoint,
+	// Point endPoint) { // for speedup
+	// // compose the start and end points of the line segment
+	// for (int i = 0; i < config.getnDimensions(); i++) {
+	// startPoint.setCoordinate(i, lineSegmentPointArray.get(index)
+	// .getCoordinate(i));
+	// endPoint.setCoordinate(i, lineSegmentPointArray.get(index)
+	// .getCoordinate(config.getnDimensions() + i));
+	// }
+	// }
 
 	private double computeDistanceBetweenTwoLineSegments(Point startPoint1,
 			Point endPoint1, Point startPoint2, Point endPoint2) {
@@ -538,7 +558,6 @@ public class TraClusClustering {
 		// this step consists of two substeps
 		// notice that the result of the previous substep is used in the
 		// following substeps
-
 		if (!constructLineSegmentCluster())
 			return false;
 
@@ -548,14 +567,60 @@ public class TraClusClustering {
 		return true;
 	}
 
+	public void saveResult(File outFile) {
+		BufferedWriter writer = FileUtils.getBufferedWriter(outFile);
+		try {
+			for (Cluster cluster : clusterList)
+				cluster.writeCluster(writer);
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			FileUtils.closeWriter(writer);
+		}
+	}
+
+	public void process() {
+		if (!loadTrajectory()) {
+			System.err.println("Unable to load trajectory file");
+			return;
+		}
+		System.out.println("Success to load trajectory file! There are "+trajectoryList.size()+" trajectories");
+
+		// FIRST STEP: Trajectory Partitioning
+		if (!partitionTrajectory()) {
+			System.err.println("Unable to partition a trajectory");
+			return;
+		}
+
+		System.out.println("Success to partition trajectories! There are "+nTotalLineSegments+"|"+lineSegmentArray.size()+" line segments");
+		// SECOND STEP: Density-based Clustering
+		if (!performDBSCAN(config.getEps(), config.getMinLen())) {
+			System.err.println("Unable to perform the DBSCAN algorithm");
+			return;
+		}
+
+		System.out.println("Success to run DBSCAN! There are "+currComponentId+" clusters");
+		// THIRD STEP: Cluster Construction
+		if (!constructCluster()) {
+			System.err.println("Unable to construct a cluster");
+			return;
+		}
+		System.out.println("Success to construct cluster!");
+		saveResult(new File(config.getClusterFileName()));
+		System.out.println("Finish!");
+	}
+
 	private boolean constructLineSegmentCluster() {
 		int nDimensions = config.getnDimensions();
 
+		// all cluster
 		lineSegmentClusters = new LineSegmentCluster[currComponentId];
 
 		// initialize the list of line segment clusters
 		// START ...
 		for (int i = 0; i < currComponentId; i++) {
+			LineSegmentCluster lineSegmentCluster = new LineSegmentCluster(config.getnDimensions());
+			lineSegmentClusters[i] = lineSegmentCluster;
 			lineSegmentClusters[i].lineSegmentClusterId = i;
 			lineSegmentClusters[i].nLineSegments = 0;
 			lineSegmentClusters[i].nClusterPoints = 0;
@@ -567,11 +632,13 @@ public class TraClusClustering {
 		// accumulate the direction vector of a line segment
 		for (int i = 0; i < nTotalLineSegments; i++) {
 			int componentId = componentIdArray[i];
-			if (componentId >= 0) {
+			if (componentId >= 0) {// if componentId<0, that means the line
+									// segment is unclassified or noisy
+				Point startPoint = lineSegmentArray.get(i).startPoint;
+				Point endPoint = lineSegmentArray.get(i).endPoint;
 				for (int j = 0; j < nDimensions; j++) {
-					double difference = lineSegmentPointArray.get(i)
-							.getCoordinate(nDimensions + j)
-							- lineSegmentPointArray.get(i).getCoordinate(j);
+					double difference = endPoint.getCoordinate(j)
+							- startPoint.getCoordinate(j);
 					double currSum = lineSegmentClusters[componentId].avgDirectionVector
 							.getCoordinate(j) + difference;
 					lineSegmentClusters[componentId].avgDirectionVector
@@ -592,6 +659,7 @@ public class TraClusClustering {
 		for (int i = 0; i < currComponentId; i++) {
 			LineSegmentCluster clusterEntry = lineSegmentClusters[i];
 
+			// compute average value of each dimension
 			for (int j = 0; j < nDimensions; j++)
 				clusterEntry.avgDirectionVector.setCoordinate(j,
 						clusterEntry.avgDirectionVector.getCoordinate(j)
@@ -605,6 +673,7 @@ public class TraClusClustering {
 			innerProduct = VectorUtils.computeInnerProduct(
 					clusterEntry.avgDirectionVector.getCoordinate(),
 					vector2.getCoordinate());
+			// x-axis in 2-dimension
 			cosTheta = innerProduct / (vectorLength1 * vectorLength2);
 			if (cosTheta > 1.0)
 				cosTheta = 1.0;
@@ -625,15 +694,14 @@ public class TraClusClustering {
 		// [lineSegmentClusterId, nClusterPoints, clusterPointArray,
 		// nTrajectories, { trajectoryId, ... }]
 		for (int i = 0; i < nTotalLineSegments; i++) {
-			if (componentIdArray[i] >= 0) // if the componentId < 0, it is a
-											// noise
+			if (componentIdArray[i] >= 0)
+				// if the componentId < 0, it is a noise
 				registerAndUpdateLineSegmentCluster(componentIdArray[i], i);
 		}
 
 		Set<Integer> trajectories = new HashSet<Integer>();
 		for (int i = 0; i < currComponentId; i++) {
 			LineSegmentCluster clusterEntry = lineSegmentClusters[i];
-
 			// a line segment cluster must have trajectories more than the
 			// minimum threshold
 			if (clusterEntry.nTrajectories >= minLnsParam) {
@@ -641,22 +709,22 @@ public class TraClusClustering {
 
 				// DEBUG: count the number of trajectories that belong to
 				// clusters
-				for (int j = 0; j < clusterEntry.trajectoryIdList.size(); j++)
-					trajectories.add(clusterEntry.trajectoryIdList.get(j));
+				for (Integer trajectoryId : clusterEntry.trajectoryIdSet)
+					trajectories.add(trajectoryId);
 				// ... DEBUG
 
 				computeRepresentativeLines(clusterEntry);
 			} else {
 				clusterEntry.candidatePointList.clear();
 				clusterEntry.clusterPointArray.clear();
-				clusterEntry.trajectoryIdList.clear();
+				clusterEntry.trajectoryIdSet.clear();
 			}
 		}
 
 		// DEBUG: compute the ratio of trajectories that belong to clusters
 		config.setClusterRatio((double) trajectories.size()
 				/ (double) trajectoryList.size());
-
+		System.out.println(config.getClusterRatio());
 		return true;
 	}
 
@@ -668,86 +736,84 @@ public class TraClusClustering {
 		// the 2-dimension)
 		// NOTE: this program code works only for the 2-dimensional data
 
-		Point aLineSegment = lineSegmentPointArray.get(lineSegmentId);
+		Point startPoint = lineSegmentArray.get(lineSegmentId).startPoint;
+		Point endPoint = lineSegmentArray.get(lineSegmentId).endPoint;
 		double orderingValue1 = MathUtils.getXRotation(
-				aLineSegment.getCoordinate(0), aLineSegment.getCoordinate(1),
+				startPoint.getCoordinate(0), startPoint.getCoordinate(1),
 				clusterEntry.cosTheta, clusterEntry.sinTheta);
 		double orderingValue2 = MathUtils.getXRotation(
-				aLineSegment.getCoordinate(2), aLineSegment.getCoordinate(3),
+				endPoint.getCoordinate(0), endPoint.getCoordinate(1),
 				clusterEntry.cosTheta, clusterEntry.sinTheta);
 
 		CandidateClusterPoint existingCandidatePoint = new CandidateClusterPoint();
 		CandidateClusterPoint newCandidatePoint = new CandidateClusterPoint();
-		;
+
 		int i, j;
 
 		// sort the line segment points by the coordinate of the first dimension
 		// simply use the insertion sort algorithm
 		// START ...
-		Iterator<CandidateClusterPoint> iter1 = clusterEntry.candidatePointList
-				.iterator();
-		int index1 = 0;
-		for (i = 0; i < (int) clusterEntry.candidatePointList.size(); i++) {
-			existingCandidatePoint = iter1.next();
-			if (existingCandidatePoint.orderingValue < orderingValue1) {
-				iter1.next();
-				index1++;
-			} else
-				break;
-		}
-
-		newCandidatePoint.orderingValue = orderingValue1;
-		newCandidatePoint.lineSegmentId = lineSegmentId;
-		newCandidatePoint.startPointFlag = true;
-		if (i == 0)
-			clusterEntry.candidatePointList.offerFirst(newCandidatePoint);
-		else if (i >= (int) clusterEntry.candidatePointList.size())
-			clusterEntry.candidatePointList.offerLast(newCandidatePoint);
-		else {
-			CandidateClusterPoint[] arrTmp = (CandidateClusterPoint[]) clusterEntry.candidatePointList
-					.toArray();
-			arrTmp[index1] = newCandidatePoint;
-			clusterEntry.candidatePointList = new ArrayDeque<CandidateClusterPoint>(
-					CommonUtils.arr2List(arrTmp));
-		}
-
-		Iterator<CandidateClusterPoint> iter2 = clusterEntry.candidatePointList
-				.iterator();
-		int index2 = 0;
-		for (j = 0; j < (int) clusterEntry.candidatePointList.size(); j++) {
-			existingCandidatePoint = iter2.next();
-			if (existingCandidatePoint.orderingValue < orderingValue2) {
-				iter2.next();
-				index2++;
-			} else
-				break;
-		}
-
-		newCandidatePoint.orderingValue = orderingValue2;
-		newCandidatePoint.lineSegmentId = lineSegmentId;
-		newCandidatePoint.startPointFlag = false;
-		if (j == 0)
-			clusterEntry.candidatePointList.offerFirst(newCandidatePoint);
-		else if (j >= (int) clusterEntry.candidatePointList.size())
-			clusterEntry.candidatePointList.offerLast(newCandidatePoint);
-		else {
-			CandidateClusterPoint[] arrTmp = (CandidateClusterPoint[]) clusterEntry.candidatePointList
-					.toArray();
-			arrTmp[index2] = newCandidatePoint;
-			clusterEntry.candidatePointList = new ArrayDeque<CandidateClusterPoint>(
-					CommonUtils.arr2List(arrTmp));
-		}
+//		Iterator<CandidateClusterPoint> iter1 = clusterEntry.candidatePointList
+//				.iterator();
+//		int index1 = 0;
+//		for (i = 0; i < clusterEntry.candidatePointList.size(); i++) {
+//			existingCandidatePoint = iter1.next();
+//			if (existingCandidatePoint.orderingValue < orderingValue1) {
+//				iter1.next();
+//				index1++;
+//			} else
+//				break;
+//		}
+//
+//		newCandidatePoint.orderingValue = orderingValue1;
+//		newCandidatePoint.lineSegmentId = lineSegmentId;
+//		newCandidatePoint.startPointFlag = true;
+//		if (i == 0)
+//			clusterEntry.candidatePointList.offerFirst(newCandidatePoint);
+//		else if (i >= clusterEntry.candidatePointList.size())
+//			clusterEntry.candidatePointList.offerLast(newCandidatePoint);
+//		else {
+//			CandidateClusterPoint[] arrTmp = (CandidateClusterPoint[]) clusterEntry.candidatePointList
+//					.toArray();
+//			arrTmp[index1] = newCandidatePoint;
+//			clusterEntry.candidatePointList = new ArrayDeque<CandidateClusterPoint>(
+//					CommonUtils.arr2List(arrTmp));
+//		}
+//
+//		Iterator<CandidateClusterPoint> iter2 = clusterEntry.candidatePointList
+//				.iterator();
+//		int index2 = 0;
+//		for (j = 0; j < (int) clusterEntry.candidatePointList.size(); j++) {
+//			existingCandidatePoint = iter2.next();
+//			if (existingCandidatePoint.orderingValue < orderingValue2) {
+//				iter2.next();
+//				index2++;
+//			} else
+//				break;
+//		}
+//
+//		newCandidatePoint.orderingValue = orderingValue2;
+//		newCandidatePoint.lineSegmentId = lineSegmentId;
+//		newCandidatePoint.startPointFlag = false;
+//		if (j == 0)
+//			clusterEntry.candidatePointList.offerFirst(newCandidatePoint);
+//		else if (j >= (int) clusterEntry.candidatePointList.size())
+//			clusterEntry.candidatePointList.offerLast(newCandidatePoint);
+//		else {
+//			CandidateClusterPoint[] arrTmp = (CandidateClusterPoint[]) clusterEntry.candidatePointList
+//					.toArray();
+//			arrTmp[index2] = newCandidatePoint;
+//			clusterEntry.candidatePointList = new ArrayDeque<CandidateClusterPoint>(
+//					CommonUtils.arr2List(arrTmp));
+//		}
 		// ... END
 
-		int trajectoryId = idArray.get(lineSegmentId).trajectoryId;
+		int trajectoryId = lineSegmentArray.get(lineSegmentId).trajectoryId;
 
 		// store the identifier of the trajectories that belong to this line
 		// segment cluster
-		if (!clusterEntry.trajectoryIdList.contains(trajectoryId)) {
-			clusterEntry.trajectoryIdList.add(trajectoryId);
-			clusterEntry.nTrajectories++;
-		}
-
+		clusterEntry.trajectoryIdSet.add(trajectoryId);
+		clusterEntry.nTrajectories = clusterEntry.trajectoryIdSet.size();
 		return;
 	}
 
@@ -765,43 +831,35 @@ public class TraClusClustering {
 		// sweep the line segments in a line segment cluster
 		// list<CandidateClusterPoint>::iterator iter =
 		// clusterEntry.candidatePointList.begin();
-		for (CandidateClusterPoint candidateClusterPoint : clusterEntry.candidatePointList) {
+		int cnt = 0;
+		while (cnt < clusterEntry.candidatePointList.size()) {
 			insertionList.clear();
 			deletionList.clear();
 
 			do {
-				candidatePoint = candidateClusterPoint;
+				candidatePoint = (CandidateClusterPoint) clusterEntry.candidatePointList
+						.toArray()[cnt];
+				cnt++;
 
 				// check whether this line segment has begun or not
 				// iter1 = lineSegments.find(candidatePoint.lineSegmentId);
-				if (!lineSegments.contains(candidatePoint.lineSegmentId)) { // if
-																			// there
-																			// is
-																			// no
-																			// matched
-																			// element,
-					insertionList.add(candidatePoint.lineSegmentId); // this
-																		// line
-																		// segment
-																		// begins
-																		// at
-																		// this
-																		// point
+				// if there is no matched element,
+				if (!lineSegments.contains(candidatePoint.lineSegmentId)) {
+					// this line segment begins at this point
+					insertionList.add(candidatePoint.lineSegmentId);
 					lineSegments.add(candidatePoint.lineSegmentId);
 				} else
 					// if there is a matched element,
-					deletionList.add(candidatePoint.lineSegmentId); // this line
-																	// segment
-																	// ends at
-																	// this
-																	// point
+					// this line segment ends at this point
+					deletionList.add(candidatePoint.lineSegmentId);
 
 				// check whether the next line segment begins or ends at the
 				// same point
-				// if (iter != clusterEntry.candidatePointList.end())
-				// nextCandidatePoint = *iter;
-				// else
-				// break;
+				if (cnt < clusterEntry.candidatePointList.size())
+					nextCandidatePoint = (CandidateClusterPoint) clusterEntry.candidatePointList
+							.toArray()[cnt];
+				else
+					break;
 			} while (candidatePoint.orderingValue == nextCandidatePoint.orderingValue);
 
 			// check if a line segment is connected to another line segment in
@@ -816,7 +874,8 @@ public class TraClusClustering {
 					}
 				}
 				for (Integer iter3 : deletionList) {
-					if (idArray.get(iter2).trajectoryId == idArray.get(iter3).trajectoryId) {
+					if (lineSegmentArray.get(iter2).trajectoryId == lineSegmentArray
+							.get(iter3).trajectoryId) {
 						lineSegments.remove(iter3);
 						deletionList.remove(iter3); // now deleted
 						break;
@@ -825,7 +884,7 @@ public class TraClusClustering {
 			}
 
 			// if the current density exceeds a given threshold
-			if ((int) (lineSegments.size()) >= minLnsParam) {
+			if (lineSegments.size() >= minLnsParam) {
 				if (Math.abs(candidatePoint.orderingValue - prevOrderingValue) > ((double) TraClusConfig.MIN_LINESEGMENT_LENGTH / 1.414)) {
 					computeAndRegisterClusterPoint(clusterEntry,
 							candidatePoint.orderingValue, lineSegments);
@@ -847,10 +906,8 @@ public class TraClusClustering {
 			clusterEntry.enabled = false;
 			clusterEntry.candidatePointList.clear();
 			clusterEntry.clusterPointArray.clear();
-			clusterEntry.trajectoryIdList.clear();
+			clusterEntry.trajectoryIdSet.clear();
 		}
-
-		return;
 	}
 
 	private void computeAndRegisterClusterPoint(
@@ -895,23 +952,23 @@ public class TraClusClustering {
 
 	private void getSweepPointOfLineSegment(LineSegmentCluster clusterEntry,
 			double currValue, int lineSegmentId, Point sweepPoint) {
-		Point lineSegmentPoint = lineSegmentPointArray.get(lineSegmentId); // 2n-dimensional
-																			// point
+		Point startPoint = lineSegmentArray.get(lineSegmentId).startPoint; // 2n-dimensional
+		Point endPoint = lineSegmentArray.get(lineSegmentId).endPoint; // point
 		double coefficient;
 
 		// NOTE: this program code works only for the 2-dimensional data
 		double newStartX, newEndX, newStartY, newEndY;
-		newStartX = MathUtils.getXRotation(lineSegmentPoint.getCoordinate(0),
-				lineSegmentPoint.getCoordinate(1), clusterEntry.cosTheta,
+		newStartX = MathUtils.getXRotation(startPoint.getCoordinate(0),
+				startPoint.getCoordinate(1), clusterEntry.cosTheta,
 				clusterEntry.sinTheta);
-		newEndX = MathUtils.getXRotation(lineSegmentPoint.getCoordinate(2),
-				lineSegmentPoint.getCoordinate(3), clusterEntry.cosTheta,
+		newEndX = MathUtils.getXRotation(endPoint.getCoordinate(0),
+				endPoint.getCoordinate(1), clusterEntry.cosTheta,
 				clusterEntry.sinTheta);
-		newStartY = MathUtils.getYRotation(lineSegmentPoint.getCoordinate(0),
-				lineSegmentPoint.getCoordinate(1), clusterEntry.cosTheta,
+		newStartY = MathUtils.getYRotation(startPoint.getCoordinate(0),
+				startPoint.getCoordinate(1), clusterEntry.cosTheta,
 				clusterEntry.sinTheta);
-		newEndY = MathUtils.getYRotation(lineSegmentPoint.getCoordinate(2),
-				lineSegmentPoint.getCoordinate(3), clusterEntry.cosTheta,
+		newEndY = MathUtils.getYRotation(endPoint.getCoordinate(0),
+				endPoint.getCoordinate(0), clusterEntry.cosTheta,
 				clusterEntry.sinTheta);
 
 		coefficient = (currValue - newStartX) / (newEndX - newStartX);
@@ -946,8 +1003,6 @@ public class TraClusClustering {
 			}
 		}
 
-		// m_document.m_nClusters = currClusterId;
-
 		return true;
 	}
 
@@ -966,8 +1021,8 @@ public class TraClusClustering {
 			seeds.clear();
 
 			for (int i = 0; i < nTotalLineSegments; i++) {
-				extractStartAndEndPoints(i, startPoint1, endPoint1);
-				computeEPSNeighborhood(startPoint1, endPoint1, eps, seeds);
+				LineSegment lineSegment = lineSegmentArray.get(i);
+				computeEPSNeighborhood(lineSegment, eps, seeds);
 				epsNeighborhoodSize[i] = (int) seeds.size();
 				totalSize += (int) seeds.size();
 				seeds.clear();
@@ -1034,6 +1089,7 @@ public class TraClusClustering {
 
 	/**
 	 * Angle Disntance
+	 * 
 	 * @param s1
 	 * @param e1
 	 * @param s2
@@ -1046,7 +1102,8 @@ public class TraClusClustering {
 		// NOTE: the variables m_vector1 and m_vector2 are declared as member
 		// variables
 
-		// construct two vectors representing the cluster component and a line segment, respectively
+		// construct two vectors representing the cluster component and a line
+		// segment, respectively
 		for (int i = 0; i < nDimensions; i++) {
 			vector1.setCoordinate(i, e1.getCoordinate(i) - s1.getCoordinate(i));
 			vector2.setCoordinate(i, e2.getCoordinate(i) - s2.getCoordinate(i));

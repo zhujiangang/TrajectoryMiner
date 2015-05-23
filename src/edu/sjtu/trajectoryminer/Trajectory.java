@@ -3,6 +3,7 @@ package edu.sjtu.trajectoryminer;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 public class Trajectory {
@@ -21,6 +22,8 @@ public class Trajectory {
 		nDimensions = 2;
 		nPoints = 0;
 		nPartitionPoints = 0;
+		partitionPointList = new ArrayList<Point>();
+		pointList = new ArrayList<Point>();
 	}
 
 	public Trajectory(int clusterId, int nDimensions) {
@@ -29,6 +32,8 @@ public class Trajectory {
 		this.nDimensions = nDimensions;
 		nPoints = 0;
 		nPartitionPoints = 0;
+		partitionPointList = new ArrayList<Point>();
+		pointList = new ArrayList<Point>();
 	}
 
 	public void addPoint(Point point) {

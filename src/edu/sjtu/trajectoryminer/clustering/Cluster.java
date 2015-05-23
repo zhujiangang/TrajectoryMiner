@@ -11,8 +11,9 @@ import edu.sjtu.trajectoryminer.utils.FileUtils;
 public class Cluster {
 	private int clusterId;// the identifier of this cluster
 	private int nDimensions;// the dimensionality of this cluster
-	private int nTrajectories;// the number of trajectories belonging to this cluster
-	private int nPoints;// the number of points constituting a cluster 
+	private int nTrajectories;// the number of trajectories belonging to this
+								// cluster
+	private int nPoints;// the number of points constituting a cluster
 
 	private List<Point> pointList;// the array of the cluster points
 
@@ -37,20 +38,14 @@ public class Cluster {
 		nPoints = pointList.size();
 	}
 
-	public void writeCluster(File outfile) {
-		BufferedWriter writer = FileUtils.getBufferedWriter(outfile);
-		try {
-			writer.write(clusterId + " " + nPoints + " ");
-			for (Point point : pointList) {
-				writer.write(point.getCoordinate(0) + " "
-						+ point.getCoordinate(1) + " ");
-			}
-			writer.write("\n");
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
-			FileUtils.closeWriter(writer);
+	public void writeCluster(BufferedWriter writer) throws IOException {
+		// BufferedWriter writer = FileUtils.getBufferedWriter(outfile);
+		writer.write(clusterId + " " + nPoints + " ");
+		for (Point point : pointList) {
+			writer.write(point.getCoordinate(0) + " " + point.getCoordinate(1)
+					+ " ");
 		}
+		writer.write("\n");
 	}
 
 	public int getClusterId() {
