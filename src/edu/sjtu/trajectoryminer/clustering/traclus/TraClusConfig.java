@@ -4,7 +4,7 @@ public class TraClusConfig {
 
 	public static final double CONNECTABLE_DISTANCE = 5.0;
 
-	public static final int MDL_COST_ADVANTAGE = 25;
+	public static final int MDL_COST_ADVANTAGE = 5;
 
 	public static final double MIN_LINESEGMENT_LENGTH = 50.0;
 

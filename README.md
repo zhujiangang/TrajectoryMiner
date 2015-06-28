@@ -1,4 +1,4 @@
-# TrajactoryMiner
+# TrajectoryMiner
 ----------
 This is a project of trajectory mining written in Java. It contains some popular algorithms used in trajectory mining including trajectory clustering, trajectory classification, outlier detection etc.
 
