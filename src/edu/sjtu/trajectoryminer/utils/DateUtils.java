@@ -13,66 +13,77 @@ public class DateUtils {
 	 */
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
+		Date date1 = strToDate("2015-03-01 00:00:10", "yyyy-MM-dd HH:mm:ss");
+		Date date2 = strToDate("2015-01-02 01:01:03", "yyyy-MM-dd HH:mm:ss");
+		System.out.println(getHours(date1));
+//		String time = "2015-01-02 01:01:26"; 
+//		String[] timeArr = time.split(":");
+//		int second1 = Integer.parseInt(timeArr[timeArr.length-1].substring(1, 2));
+//		int second2 = Integer.parseInt(timeArr[timeArr.length-1].substring(0, 1));
+//		if(second1<5)
+//			time = time.substring(0, time.length()-2)+second2+"0";
+//		else
+//			time = time.substring(0, time.length()-2)+(second2+1)+"0";
+//		System.out.println(time);
+	}
 
+	public static String calculateTime(long start) {
+		return calculateTime(start, System.currentTimeMillis(),
+				"${d}d ${h}h${m}m${s}s");
 	}
-	
-	public static String calculateTime(long start){
-		return calculateTime(start, System.currentTimeMillis(), "${d}d ${h}h${m}m${s}s");
-	}
-	
+
 	public static String calculateTime(long start, String format) {
 		return calculateTime(start, System.currentTimeMillis(), format);
 	}
-	
-	public static String calculateTime(long start,long end){
+
+	public static String calculateTime(long start, long end) {
 		return calculateTime(start, end, "${d}d ${h}h${m}m${s}s");
 	}
-	
-	public static String calculateTime(long start, long end, String format){
+
+	public static String calculateTime(long start, long end, String format) {
 		if (format == null)
 			format = "${d}d ${h}h${m}m${s}s";
-        long between = (end - start);// 得到两者的毫秒数
-        long d = between / (24 * 60 * 60 * 1000);
-        long h = (between / (60 * 60 * 1000) - d * 24);
-        long m = ((between / (60 * 1000)) - d * 24 * 60 - h * 60);
-        long s = (between / 1000 - d * 24 * 60 * 60 - h * 60 * 60 - m * 60);
-        
-		return format
-				.replace("${d}", String.valueOf(d))
+		long between = (end - start);// 得到两者的毫秒数
+		long d = between / (24 * 60 * 60 * 1000);
+		long h = (between / (60 * 60 * 1000) - d * 24);
+		long m = ((between / (60 * 1000)) - d * 24 * 60 - h * 60);
+		long s = (between / 1000 - d * 24 * 60 * 60 - h * 60 * 60 - m * 60);
+
+		return format.replace("${d}", String.valueOf(d))
 				.replace("${h}", String.valueOf(h))
 				.replace("${m}", String.valueOf(m))
 				.replace("${s}", String.valueOf(s));
 	}
-	
-	public static Float toSeconds(String strTime){
+
+	public static Float toSeconds(String strTime) {
 		Float time = 0F;
-		for (String s : strTime.split(" ")){
+		for (String s : strTime.split(" ")) {
 			time += _toSeconds(s);
 		}
-		
+
 		return time;
 	}
-	
-	private static Float _toSeconds(String strTime){
+
+	private static Float _toSeconds(String strTime) {
 		Float time = 0F;
 		try {
-			if (strTime.endsWith("s")){
+			if (strTime.endsWith("s")) {
 				time = Float.parseFloat(strTime.replace("s", "")) * 1;
-			}else if (strTime.endsWith("m")){
+			} else if (strTime.endsWith("m")) {
 				time = Float.parseFloat(strTime.replace("m", "")) * 60;
-			}else if (strTime.endsWith("h")){
+			} else if (strTime.endsWith("h")) {
 				time = Float.parseFloat(strTime.replace("h", "")) * 60 * 60;
-			}else if (strTime.endsWith("d")){
+			} else if (strTime.endsWith("d")) {
 				time = Float.parseFloat(strTime.replace("d", "")) * 60 * 60 * 24;
-			}else
+			} else
 				time = Float.parseFloat(strTime);
 		} catch (Throwable e) {
-			
+
 		}
-		
+
 		return time;
 	}
-	
+
 	public static long[] changeSecondsToTime(long seconds) {
 		long hour = seconds / 3600;
 		long minute = (seconds - hour * 3600) / 60;
@@ -80,7 +91,6 @@ public class DateUtils {
 
 		return new long[] { hour, minute, second };
 	}
-
 
 	public static int getDayOfYear(Date date) {
 		Calendar c = Calendar.getInstance();
@@ -166,10 +176,10 @@ public class DateUtils {
 		return cal.getTime();
 	}
 
-	public static Date addDay(Date source, int day){
+	public static Date addDay(Date source, int day) {
 		return addDate(source, day);
 	}
-	
+
 	public static Date addDate(Date source, int day) {
 		Calendar cal = Calendar.getInstance();
 		cal.setTime(source);
@@ -197,16 +207,15 @@ public class DateUtils {
 	public static Date parse(String format, String source) {
 		return parse(format, source, Locale.getDefault());
 	}
-	
-	
+
 	public static Date parse(String format, String source, Locale locale) {
 		int aaIndex = format.indexOf(" aa");
-		if (aaIndex > -1){
-			String apm = source.substring(aaIndex+1, aaIndex+1+2);
+		if (aaIndex > -1) {
+			String apm = source.substring(aaIndex + 1, aaIndex + 1 + 2);
 			format = format.replace(" aa", "");
 			return parse(format, source.substring(0, aaIndex), apm, locale);
 		}
-		
+
 		SimpleDateFormat sdf = new java.text.SimpleDateFormat(format, locale);
 		try {
 			return sdf.parse(source);
@@ -214,20 +223,21 @@ public class DateUtils {
 			throw new RuntimeException(e);
 		}
 	}
-	
-	public static Date parse(String format, String source, String amOrPm){
+
+	public static Date parse(String format, String source, String amOrPm) {
 		return parse(format, source, amOrPm, Locale.getDefault());
 	}
-	
-	public static Date parse(String format, String source, String amOrPm, Locale locale) {
+
+	public static Date parse(String format, String source, String amOrPm,
+			Locale locale) {
 		SimpleDateFormat sdf = new java.text.SimpleDateFormat(format, locale);
 		try {
 			Date date = sdf.parse(source);
 			int HH = CommonUtils.toInt(formatTime("HH", date));
-			if ("PM".equalsIgnoreCase(amOrPm)){
+			if ("PM".equalsIgnoreCase(amOrPm)) {
 				if (HH <= 12)
 					date = addHour(date, 12);
-			}else if ("AM".equalsIgnoreCase(amOrPm)){
+			} else if ("AM".equalsIgnoreCase(amOrPm)) {
 				if (HH >= 12)
 					date = addHour(date, -12);
 			}
@@ -237,13 +247,14 @@ public class DateUtils {
 		}
 	}
 
-	public static Date parse(String source){
+	public static Date parse(String source) {
 		return parse(source, Locale.getDefault());
 	}
-	
+
 	public static Date parse(String source, Locale locale) {
 		return parse("yyyy-MM-dd HH:mm:ss", source, locale);
 	}
+
 	/**
 	 * 格式化时间 yyyy-MM-dd HH:mm:ss
 	 * 
@@ -270,11 +281,11 @@ public class DateUtils {
 		String time = new java.text.SimpleDateFormat(format).format(date);
 		return time;
 	}
-	
-	public static Date newDate(){
+
+	public static Date newDate() {
 		return new Date();
 	}
-	
+
 	public static Date newDate(String pattern, String time) {
 		SimpleDateFormat sdf = new SimpleDateFormat(pattern);
 		try {
@@ -283,6 +294,7 @@ public class DateUtils {
 			throw new RuntimeException();
 		}
 	}
+
 	public static Date strToDate(String source, String pattern) {
 		Date date = null;
 		SimpleDateFormat format = new SimpleDateFormat(pattern);
@@ -293,6 +305,11 @@ public class DateUtils {
 		}
 		return date;
 	}
+	
+	public static Date strToDate(String source) {
+		return strToDate(source, "yyyy-MM-dd HH:mm:ss");
+	}
+	
 
 	public static String dateToStr(Date source, String pattern) {
 		String result = null;
@@ -300,8 +317,11 @@ public class DateUtils {
 		result = format.format(source);
 		return result;
 	}
-	
 
+	public static String dateToStr(Date source) {
+		return dateToStr(source,"yyyy-MM-dd HH:mm:ss");
+	}
+	
 	public static String resoveTime(final String time) {
 		String[] array = time.split(":");
 		StringBuilder sb = new StringBuilder();
@@ -366,19 +386,20 @@ public class DateUtils {
 				.matches("^\\d{4}(\\-|\\/|\\.)\\d{1,2}\\1\\d{1,2}$") : false;
 	}
 
-	public static boolean isValidDateTime(String source){
+	public static boolean isValidDateTime(String source) {
 		return isValidDateTime(source, Locale.getDefault());
 	}
-	
+
 	public static boolean isValidDateTime(String source, Locale locale) {
 		return isValidDateTime(source, "yyyy-MM-dd HH:mm:ss", locale);
 	}
 
-	public static boolean isValidDateTime(String source, String format){
+	public static boolean isValidDateTime(String source, String format) {
 		return isValidDateTime(source, format, Locale.getDefault());
 	}
-	
-	public static boolean isValidDateTime(String source, String format, Locale locale) {
+
+	public static boolean isValidDateTime(String source, String format,
+			Locale locale) {
 		try {
 			Date date = parse(format, source, locale);
 			return date != null;
@@ -386,50 +407,56 @@ public class DateUtils {
 			return false;
 		}
 	}
+
 	public static int getYears(Date date) {
 		Calendar cal = Calendar.getInstance();
+		cal.setTime(date);
 		return cal.get(Calendar.YEAR);
 	}
-	
+
 	public static int getMonths(Date date) {
 		Calendar cal = Calendar.getInstance();
-		return cal.get(Calendar.MONTH);
+		cal.setTime(date);
+		return cal.get(Calendar.MONTH)+1;
 	}
-	
-	
+
 	public static int getDays(Date date, int type) {
 		Calendar cal = Calendar.getInstance();
+		cal.setTime(date);
 		return cal.get(type);
 	}
-	
+
 	public static int getHours(Date date) {
 		Calendar cal = Calendar.getInstance();
+		cal.setTime(date);
 		return cal.get(Calendar.HOUR_OF_DAY);
 	}
-	
+
 	public static int getMinute(Date date) {
 		Calendar cal = Calendar.getInstance();
+		cal.setTime(date);
 		return cal.get(Calendar.MINUTE);
 	}
-	
+
 	public static int getSecond(Date date) {
 		Calendar cal = Calendar.getInstance();
+		cal.setTime(date);
 		return cal.get(Calendar.SECOND);
 	}
-	
-	public static Long getNow(){
+
+	public static Long getNow() {
 		return System.currentTimeMillis();
 	}
-	
-	public static Long getNow(int length){
+
+	public static Long getNow(int length) {
 		return getTime(length, new Date());
 	}
-	
-	public static Long getTime(int length, Date date){
+
+	public static Long getTime(int length, Date date) {
 		String time = String.valueOf(date.getTime()).substring(0, length);
 		return Long.parseLong(time);
 	}
-	
+
 	/**
 	 * @功能 取得当前时间,给定格式
 	 * @return
@@ -440,12 +467,14 @@ public class DateUtils {
 		}
 
 		if (loc == null)
-			return new java.text.SimpleDateFormat(format).format(java.util.Calendar.getInstance().getTime());
-		
-		return new java.text.SimpleDateFormat(format, loc).format(java.util.Calendar.getInstance().getTime());
+			return new java.text.SimpleDateFormat(format)
+					.format(java.util.Calendar.getInstance().getTime());
+
+		return new java.text.SimpleDateFormat(format, loc)
+				.format(java.util.Calendar.getInstance().getTime());
 	}
-	
-	public static String getNowTime(String format){
+
+	public static String getNowTime(String format) {
 		return getNowTime(format, null);
 	}
 

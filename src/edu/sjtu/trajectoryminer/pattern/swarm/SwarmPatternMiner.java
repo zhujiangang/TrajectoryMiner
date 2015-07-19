@@ -47,7 +47,7 @@ public class SwarmPatternMiner {
 			// 每一行，一开始是时刻的id，然后是这个时刻有多少个聚类
 			String line = lines.get(i + 1);
 			arr = line.split("\t");
-			String[] arr1 = arr[0].split("\\s+");
+			String[] arr1 = arr[0].split(":");
 			tid = Integer.parseInt(arr1[0]);
 			n_cluster = Integer.parseInt(arr1[1]);
 			if (tid % 100 == 0)
