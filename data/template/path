@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Track</title>
+<style type="text/css">
+	html{height:100%}
+	body{height:100%;margin:0px;padding:0px}
+	#controller{width:100%; border-bottom:3px outset; height:30px; filter:alpha(Opacity=100); -moz-opacity:1; opacity:1; z-index:10000; background-color:lightblue;}
+	#container{height:100%}
+</style>  
+<script type="text/javascript" src="http://api.map.baidu.com/api?v=1.5&ak=D2b4558ebed15e52558c6a766c35ee73"></script>
+<script type="text/javascript">
+
+var points = [
+	$Points$
+];
+
+var map;   
+var car;  
+var label; 
+var centerPoint;
+
+var timer;   
+var index = 0; 
+
+var followChk, playBtn, pauseBtn, resetBtn; 
+
+function init() {
+	followChk = document.getElementById("follow");
+	playBtn = document.getElementById("play");
+	pauseBtn = document.getElementById("pause");
+	resetBtn = document.getElementById("reset");
+
+
+	map = new BMap.Map("container");
+	map.centerAndZoom(points[0], 15);
+	map.enableScrollWheelZoom();
+	map.addControl(new BMap.NavigationControl());
+	map.addControl(new BMap.ScaleControl());
+	map.addControl(new BMap.OverviewMapControl({isOpen: true}));
+	map.panTo(centerPoint);
+
+	map.addOverlay(new BMap.Polyline(points, {strokeColor: "black", strokeWeight: 5, strokeOpacity: 1}));
+}
+
+function play() {
+	playBtn.disabled = true;
+	pauseBtn.disabled = false;
+	
+	var point = points[index];
+	if(index > 0) {
+		map.addOverlay(new BMap.Polyline([points[index - 1], point], {strokeColor: "red", strokeWeight: 1, strokeOpacity: 1}));
+	}
+	label.setContent("经度: " + point.lng + "<br>纬度: " + point.lat);
+	car.setPosition(point);
+	index++;
+	if(followChk.checked) {
+		map.panTo(point);
+	}
+	if(index < points.length) {
+		timer = window.setTimeout("play(" + index + ")", 200);
+	} else {
+		playBtn.disabled = true;
+		pauseBtn.disabled = true;
+		map.panTo(point);
+	}
+}
+
+function pause() {
+	playBtn.disabled = false;
+	pauseBtn.disabled = true;
+	
+	if(timer) {
+		window.clearTimeout(timer);
+	}
+}
+
+function reset() {
+	followChk.checked = false;
+	playBtn.disabled = false;
+	pauseBtn.disabled = true;
+	
+	if(timer) {
+		window.clearTimeout(timer);
+	}
+	index = 0;
+	car.setPosition(points[0]);
+	map.panTo(centerPoint);
+}
+</script>
+</head>  
+   
+<body onload="init();">  
+	<div id="controller" align="center">
+		<input id="follow" type="checkbox"><span style="font-size:12px;">画面跟随</span></input>
+		<input id="play" type="button" value="播放" onclick="play();" disabled />
+		<input id="pause" type="button" value="暂停" onclick="pause();" disabled />
+		<input id="reset" type="button" value="重置" onclick="reset()" disabled />
+	</div>
+	<div id="container"></div>
+</body>  
+</html>

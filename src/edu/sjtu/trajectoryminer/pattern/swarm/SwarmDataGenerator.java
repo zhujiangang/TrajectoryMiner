@@ -30,7 +30,7 @@ public class SwarmDataGenerator {
 				"D:\\Research\\Car\\swarm\\swarmTrajectory\\ip2420150301_cluster.txt"));
 	}
 
-	private String trajectoryFile = "D:\\Research\\Car\\swarm\\swarmTrajectory\\ip2420150301.txt";
+	private String trajectoryFile = "D:\\Research\\Car\\swarm\\swarmTrajectory\\ip2420150301.txt.all";
 	private Map<String, Map<Date, String[]>> trajectoryById;
 	private Set<Date> allTimes;
 	private double eps = 0.08;
@@ -156,4 +156,13 @@ public class SwarmDataGenerator {
 			FileUtils.closeWriter(writer);
 		}
 	}
+
+	public Map<String, Map<Date, String[]>> getTrajectoryById() {
+		return trajectoryById;
+	}
+
+	public void setTrajectoryById(Map<String, Map<Date, String[]>> trajectoryById) {
+		this.trajectoryById = trajectoryById;
+	}
+	
 }

@@ -59,7 +59,7 @@ public class TrajectoryDataLoader {
 	public void extract(File traFile, Set<String> ids, String outFileDir){
 		System.out.println(traFile.getName());
 		String data = FileUtils.readFile(traFile);
-		BufferedWriter writer = FileUtils.getBufferedWriter(new File(outFileDir+"/"+traFile.getName()+".9"));
+		BufferedWriter writer = FileUtils.getBufferedWriter(new File(outFileDir+"/"+traFile.getName()+".all"));
 
 		Map<String, JSONArray> map = (Map<String, JSONArray>) JSON
 				.parse(data);
@@ -83,13 +83,13 @@ public class TrajectoryDataLoader {
 					String lat = (String) geo.get(1);
 					
 					/***********对时间做修改，全部归到0，5两档****************/
-					String[] timeArr = time.split(":");
-					int second1 = Integer.parseInt(timeArr[timeArr.length-1].substring(1, 2));
-					int second2 = Integer.parseInt(timeArr[timeArr.length-1].substring(0, 1));
-					if(second1<5)
-						time = time.substring(0, time.length()-2)+second2+"0";
-					else
-						time = time.substring(0, time.length()-2)+(second2+1)+"0";
+//					String[] timeArr = time.split(":");
+//					int second1 = Integer.parseInt(timeArr[timeArr.length-1].substring(1, 2));
+//					int second2 = Integer.parseInt(timeArr[timeArr.length-1].substring(0, 1));
+//					if(second1<5)
+//						time = time.substring(0, time.length()-2)+second2+"0";
+//					else
+//						time = time.substring(0, time.length()-2)+(second2+1)+"0";
 											
 					Date date = DateUtils.strToDate(time,
 							"yyyy-MM-dd HH:mm:ss");
